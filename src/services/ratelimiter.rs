@@ -1,8 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::Context;
 use redis::AsyncCommands;
 use teloxide::types::ChatId;
 
-use crate::state::AppState;
+use crate::{state::AppState, utils::error::BotResult};
 
 pub struct RateLimiter {
     max_requests: u32,
@@ -18,7 +18,7 @@ impl RateLimiter {
         }
     }
 
-    pub async fn check_rate_limit(&self, chat_id: ChatId) -> Result<bool> {
+    pub async fn check_rate_limit(&self, chat_id: ChatId) -> BotResult<bool> {
         let mut conn = AppState::get().redis.get_connection().await?;
         let key = format!("rate_limit:{}:{}", chat_id.0, chrono::Utc::now().date_naive());
 

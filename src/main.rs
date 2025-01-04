@@ -35,7 +35,6 @@ async fn shuttle_main(
     let state = AppState::get();
 
     let client = http::create_telegram_client();
-
     let bot_service = BotService {
         bot: Bot::with_client(state.config.telegram.0.clone(), client),
     };
@@ -50,24 +49,8 @@ impl shuttle_runtime::Service for BotService {
     async fn bind(self, _addr: std::net::SocketAddr) -> Result<(), shuttle_runtime::Error> {
         let shared_self = Arc::new(self);
 
-        // TODO
-        // start_cleanup_job().await;
-
         shared_self.start().await.expect("Failed to start bot");
 
         Ok(())
     }
 }
-
-// #[allow(unused)]
-// async fn start_cleanup_job() {
-//     tokio::spawn(async move {
-//         let mut interval = tokio::time::interval(Duration::from_secs(60 * 60));
-//         loop {
-//             interval.tick().await;
-//             if let Err(e) = cleanup_old_files(PathBuf::from("downloads"), 24).await {
-//                 log::error!("Cleanup error: {}", e);
-//             }
-//         }
-//     });
-// }
