@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use teloxide_tests::{MockBot, MockMessageText};
 use tokio::sync::Mutex;
 
 use crate::{
@@ -7,7 +8,7 @@ use crate::{
     services::dialogue::{DialogueService, DialogueState},
     state::AppState,
 };
-use teloxide::dispatching::dialogue::ErasedStorage;
+use teloxide::{dispatching::dialogue::ErasedStorage, dptree};
 
 #[allow(unused)]
 pub static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
@@ -15,9 +16,9 @@ pub static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
 fn get_redis_host() -> String {
     std::env::var("REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string())
 }
-#[allow(unused)]
+
 /// Common test setup function that can be used across all test files
-pub async fn setup_test_state() -> BotResult<(&'static AppState, Arc<ErasedStorage<DialogueState>>)> {
+async fn setup_test_state() -> BotResult<(&'static AppState, Arc<ErasedStorage<DialogueState>>)> {
     let _lock = TEST_MUTEX.lock().await;
 
     let mut test_config = AppConfig::new_test_config();
@@ -40,4 +41,14 @@ pub async fn setup_test_state() -> BotResult<(&'static AppState, Arc<ErasedStora
         .expect("Failed to initialize test storage");
 
     Ok((test_app_state, storage))
+}
+
+pub async fn setup_test_bot(msg: &str) -> MockBot {
+    let (test_app_state, storage) = setup_test_state().await.expect("Failed to setup test state");
+
+    let bot = MockBot::new(MockMessageText::new().text(msg), crate::handlers::get_handler());
+
+    bot.dependencies(dptree::deps![storage, test_app_state]);
+
+    bot
 }

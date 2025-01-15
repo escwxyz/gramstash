@@ -46,6 +46,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install jq
+        run: |
+          apt-get update && apt-get install -y jq
+
+      - name: Create Turso Test Database
+        id: create_db
+        run: |
+          # Create the new database
+          echo "Creating database: ${{ github.ref_name }}_${{ github.run_id }}"
+
+          CREATE_RESPONSE=$(curl -v -f -X POST \
+            -H "Authorization: Bearer ${{ secrets.TURSO_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "name": "${{ github.ref_name }}_${{ github.run_id }}",
+              "group": "default",
+              "seed": {
+                "type": "database",
+                "name": "${{ secrets.TURSO_EXISTING_DATABASE_NAME }}"
+              }
+            }' \
+            "https://api.turso.tech/v1/organizations/${{ secrets.TURSO_ORGANIZATION_NAME }}/databases")
+
+          # Print response for debugging (be careful with secrets)
+          echo "Response: $CREATE_RESPONSE"
+
+          if [ $? -ne 0 ]; then
+            echo "Failed to create database"
+            exit 1
+          fi
+
+          echo "Database created successfully"
+
+      - name: Get Database Token
+        run: |
+          curl -sSf https://github.com/tursodatabase/turso-cli/releases/download/v1.0.0/turso_Linux_x86_64.tar.gz | tar -xz
+          ./turso auth login --token ${{ secrets.TURSO_API_TOKEN }}
+          ./turso db tokens create ${{ github.ref_name }}_${{ github.run_id }} --expiration 1h > token.txt
+          echo "TURSO_TOKEN=$(cat token.txt)" >> $GITHUB_ENV
+          echo "TURSO_URL=libsql://${{ github.ref_name }}_${{ github.run_id }}.turso.io" >> $GITHUB_ENV
+
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
@@ -63,6 +104,9 @@ jobs:
 
       - name: Run tests with coverage
         id: coverage
+        env:
+          TURSO_URL: ${{ env.TURSO_URL }}
+          TURSO_TOKEN: ${{ env.TURSO_TOKEN }}
         run: |
           cargo tarpaulin --out xml
         # --fail-under $MIN_COVERAGE # TODO
@@ -72,3 +116,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+      - name: Cleanup Turso Database
+        if: always()
+        run: |
+          ./turso db destroy ${{ github.ref_name }}_${{ github.run_id }} --yes

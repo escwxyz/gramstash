@@ -102,17 +102,11 @@ pub fn get_command_handler() -> UpdateHandler<Box<dyn std::error::Error + Send +
 
 #[cfg(test)]
 mod tests {
-    use crate::{handlers::get_handler, services::dialogue::DialogueState, utils::test::setup_test_state};
-    use teloxide::dptree;
-    use teloxide_tests::{MockBot, MockMessageText};
+    use crate::{services::dialogue::DialogueState, utils::test::setup_test_bot};
 
     #[tokio::test]
     async fn test_handle_help() {
-        let (test_app_state, storage) = setup_test_state().await.expect("Failed to setup test state");
-
-        let bot = MockBot::new(MockMessageText::new().text("/help"), get_handler());
-
-        bot.dependencies(dptree::deps![storage, test_app_state]);
+        let bot = setup_test_bot("/help").await;
         bot.set_state(DialogueState::Start).await;
 
         bot.dispatch().await;
@@ -130,13 +124,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_unknown_command() {
-        let (test_app_state, storage) = setup_test_state().await.expect("Failed to setup test state");
-
-        let bot = MockBot::new(MockMessageText::new().text("/stats"), get_handler());
-
-        bot.dependencies(dptree::deps![storage, test_app_state]);
-
-        bot.set_state(DialogueState::Start).await;
+        let bot = setup_test_bot("/stats").await;
 
         bot.dispatch().await;
 

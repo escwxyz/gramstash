@@ -23,6 +23,7 @@ A Telegram bot that allows users to download media content from Instagram, inclu
 - A Telegram Bot Token (get it from [@BotFather](https://t.me/botfather))
 - [Upstash](https://upstash.com/) account (for Redis and Rate Limiting)
 - [Shuttle](https://shuttle.dev/) account (for deployment)
+- [Turso](https://turso.tech/) account (for database)
 
 ### Environment Variables
 
@@ -41,6 +42,8 @@ CACHE_EXPIRY_SECS = "your-cache-expiry-secs"
 DIALOGUE_USE_REDIS = "true to use redis, false to use in-memory"
 DIALOGUE_CLEAR_INTERVAL_SECS = "your-dialogue-clear-interval-secs"
 SESSION_REFRESH_INTERVAL_SECS = "your-session-refresh-interval-secs"
+TURSO_URL = "your-turso-database-url"
+TURSO_TOKEN = "your-turso-token"
 ```
 
 ## Architecture 🏗️
